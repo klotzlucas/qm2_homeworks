@@ -193,7 +193,7 @@ print(plot_gdp_pc_23_log)
 
 
 # Save the histogram as an image file
-ggsave("2. output/figures/distribution_gdp_pc_naics_71_2023.png", plot = plot_gdp_pc_23, width = 8, height = 6) # save plot
+ggsave("2. output/figures/distribution_log_gdp_pc_naics_71_2023.png", plot = plot_gdp_pc_23_log, width = 8, height = 6) # save plot
 
 # |||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||
 # Section 3.5 - Analyzing Time Trends in Arts, Entertainment, and Recreation Industry (NAICS 71) Annual Log GDP per Capita -------
