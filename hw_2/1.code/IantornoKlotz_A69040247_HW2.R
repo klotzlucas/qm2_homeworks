@@ -38,7 +38,7 @@ th <- theme(panel.grid.major = element_blank(), panel.grid.minor = element_blank
             plot.caption.position =  "plot")
 
 # Set working directory
-setwd("/Users/liklotz/Library/CloudStorage/OneDrive-Pessoal/UCSD/winter quarter 2026/QM II/homeworks/hw 2") # the TA should change the working directory
+setwd("/Users/liklotz/Library/CloudStorage/OneDrive-Pessoal/UCSD/winter_quarter_2026/QM_II/homeworks/hw_2") # the TA should change the working directory
 getwd()
 
 # |||||||||||||||||||||||||||||||||||||||||||||||||||||||
@@ -247,7 +247,7 @@ print(naics_71_log_gdp_plot)
 ggsave("2. output/figures/naics_71_log_gdp_plot.png", plot = naics_71_log_gdp_plot, width = 8, height = 6) # save plot
 
 # |||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||
-# Section 3.6 - Visualizing the Data: Demographic Differences Across Counties that Hosted the Eras Tour and Those That Did Not
+# Section 3.6 - Visualizing the Data: Demographic Differences Across Counties that Hosted the Eras Tour and Those That Did Not ----
 # |||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||
 
 # 1. Install and Load Necessary Packages (Can be done at top of script)
@@ -325,99 +325,340 @@ print(final_panel)
 ggsave("demographics_comparison_panel.png", plot = final_panel, width = 12, height = 10, dpi = 300)
 
 
+# |||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||
+# Section 3.7.1 - Regression Analysis: Industries Most Likely to Be Impacted (NAICS 71) -----
+# |||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||
 
+## 1. Filter the dataset to only include NAICS 71 -----
 
-# ------------------------------------------
-# Section 3.7 - Multiple Regression Analyses
-# ------------------------------------------
-# -------------------------------------------------------------------------------------
-# Section 3.7.1 - Regression Analysis: Industries Most Likely to Be Impacted (NAICS 71)
-# -------------------------------------------------------------------------------------
+# Done below
 
-# 1. Filter the dataset to only include NAICS 71
+## 2. Prepare population characteristics and relevant variables -----
 
-# 2. Prepare population characteristics and relevant variables
+regression_data_71 <- regression_data |>
+  filter(industry_classification == 71)|>
+  mutate(less_than_HS_share = (less_than_a_high_school_diploma_2018_22/pop_estimate_2023),
+         hs_only_share = (high_school_diploma_only_2018_22/pop_estimate_2023),
+         some_college_share = (some_college_or_associates_degree_2018_22/pop_estimate_2023),
+         bachelors_or_higher_share = (bachelors_degree_or_higher_2018_22/pop_estimate_2023),
+         net_mig_rate = (net_mig_2023/pop_estimate_2023),
+         log_gdp_pc = log(1+x2023))|>
+  select(1,49,29,37,43:48)
 
-# 3. Define regression models with progressively added controls
-
-# Model 1: Log GDP Per Capita (2023) regressed on Eras Tour Host only
-
-# Model 2: Add educational attainment controls
-
-# Model 3: Add poverty control
-
-# Model 4: Add net migration control
-
-# Model 5: Add GDP in 2022 as an additional control
-
-# 4. Generate the regression table with stargazer
-
-
-# -------------------------------------------------------------------------------------
-# Section 3.7.2 - Regression Analysis: Industries Most Likely to Be Impacted (NAICS 72)
-# -------------------------------------------------------------------------------------
-
-# 1. Filter the dataset to only include NAICS 72
-
-# 2. Prepare population characteristics and relevant variables
-
-# 3. Define regression models with progressively added controls
+## 3. Define regression models with progressively added controls ---------
 
 # Model 1: Log GDP Per Capita (2023) regressed on Eras Tour Host only
 
+model_1 <- lm(log_gdp_pc ~ eras_tour_host, data = regression_data_71)
+
+print(summary(model_1))
+
 # Model 2: Add educational attainment controls
+
+model_2 <- lm(log_gdp_pc ~ eras_tour_host + less_than_HS_share + hs_only_share +
+                some_college_share + bachelors_or_higher_share, data = regression_data_71)
+
+print(summary(model_2))
 
 # Model 3: Add poverty control
 
+model_3 <- lm(log_gdp_pc ~ eras_tour_host + less_than_HS_share + hs_only_share +
+                some_college_share + bachelors_or_higher_share + pctpovall_2021, data = regression_data_71)
+
+print(summary(model_3))
+
 # Model 4: Add net migration control
+
+model_4 <- lm(log_gdp_pc ~ eras_tour_host + less_than_HS_share + hs_only_share +
+                some_college_share + bachelors_or_higher_share + pctpovall_2021 +
+                net_mig_rate, data = regression_data_71)
+
+print(summary(model_4))
 
 # Model 5: Add GDP in 2022 as an additional control
 
+model_5 <- lm(log_gdp_pc ~ eras_tour_host + less_than_HS_share + hs_only_share +
+                some_college_share + bachelors_or_higher_share + pctpovall_2021 +
+                net_mig_rate + x2022, data = regression_data_71)
+
+print(summary(model_5))
+
 # 4. Generate the regression table with stargazer
 
+all_models <- list(model_1,model_2,model_3,model_4,model_5)
 
+stargazer(
+  all_models,
+  type = "text",
+  #title = "Regression Results: Effects of the Eras Tour on Arts, Entertainment, and Recreation (2023)",
+  dep.var.labels = "Log GDP Per Capita (2023)",
+  covariate.labels = c(
+    "Eras Tour Host",
+    "Share with Less than High School",
+    "Share with High School Only",
+    "Share with Some College",
+    "Share with Bachelor's Degree or Higher",
+    "Poverty Rate (2021)",
+    "Net Migration Rat (2023)",
+    "GDP Per Capita (2022)"
+  ),
+  #column.labels = "Arts, Entertainment, and Recreation",
+  align = TRUE,
+  no.space = TRUE,
+  digits = 2,
+  out = "2. output/tables/regression_results_71.txt"
+)
+
+# -------------------------------------------------------------------------------------
+# Section 3.7.2 - Regression Analysis: Industries Most Likely to Be Impacted (NAICS 72) ----
+# -------------------------------------------------------------------------------------
+
+## 1. Filter the dataset to only include NAICS 72 -----
+
+# Done below.
+
+## 2. Prepare population characteristics and relevant variables -----
+
+regression_data_72 <- regression_data |>
+  filter(industry_classification == 72)|>
+  mutate(less_than_HS_share = (less_than_a_high_school_diploma_2018_22/pop_estimate_2023),
+         hs_only_share = (high_school_diploma_only_2018_22/pop_estimate_2023),
+         some_college_share = (some_college_or_associates_degree_2018_22/pop_estimate_2023),
+         bachelors_or_higher_share = (bachelors_degree_or_higher_2018_22/pop_estimate_2023),
+         net_mig_rate = (net_mig_2023/pop_estimate_2023),
+         log_gdp_pc = log(1+x2023))|>
+  select(1,49,29,37,43:48)
+
+## 3. Define regression models with progressively added controls ---------
+
+# Model 1: Log GDP Per Capita (2023) regressed on Eras Tour Host only
+
+model_1 <- lm(log_gdp_pc ~ eras_tour_host, data = regression_data_72)
+
+print(summary(model_1))
+
+# Model 2: Add educational attainment controls
+
+model_2 <- lm(log_gdp_pc ~ eras_tour_host + less_than_HS_share + hs_only_share +
+                some_college_share + bachelors_or_higher_share, data = regression_data_72)
+
+print(summary(model_2))
+
+# Model 3: Add poverty control
+
+model_3 <- lm(log_gdp_pc ~ eras_tour_host + less_than_HS_share + hs_only_share +
+                some_college_share + bachelors_or_higher_share + pctpovall_2021, data = regression_data_72)
+
+print(summary(model_3))
+
+# Model 4: Add net migration control
+
+model_4 <- lm(log_gdp_pc ~ eras_tour_host + less_than_HS_share + hs_only_share +
+                some_college_share + bachelors_or_higher_share + pctpovall_2021 +
+                net_mig_rate, data = regression_data_72)
+
+print(summary(model_4))
+
+# Model 5: Add GDP in 2022 as an additional control
+
+model_5 <- lm(log_gdp_pc ~ eras_tour_host + less_than_HS_share + hs_only_share +
+                some_college_share + bachelors_or_higher_share + pctpovall_2021 +
+                net_mig_rate + x2022, data = regression_data_72)
+
+print(summary(model_5))
+
+# 4. Generate the regression table with stargazer
+
+all_models <- list(model_1,model_2,model_3,model_4,model_5)
+
+stargazer(
+  all_models,
+  type = "text",
+  #title = "Regression Results: Effects of the Eras Tour on GDP (2023)",
+  dep.var.labels = "Log GDP Per Capita (2023)",
+  covariate.labels = c(
+    "Eras Tour Host",
+    "Share with Less than High School",
+    "Share with High School Only",
+    "Share with Some College",
+    "Share with Bachelor's Degree or Higher",
+    "Poverty Rate (2021)",
+    "Net Migration Rat (2023)",
+    "GDP Per Capita (2022)"
+  ),
+  #column.labels = "Arts, Entertainment, and Recreation",
+  align = TRUE,
+  no.space = TRUE,
+  digits = 2,
+  out = "2. output/tables/regression_data_72.txt"
+)
 
 # -------------------------------------------------------------------------------------------
-# Section 3.7.3 - Regression Analysis: Industries Moderately Likely to Be Impacted (NAICS 54)
+# Section 3.7.3 - Regression Analysis: Industries Moderately Likely to Be Impacted (NAICS 54) ------
 # -------------------------------------------------------------------------------------------
 
-# 1. Filter the dataset to only include NAICS 54
+## 1. Filter the dataset to only include NAICS 54 -------
 
-# 2. Prepare population characteristics and relevant variables
+# Done below.
 
-# 3. Define regression models with progressively added controls
+## 2. Prepare population characteristics and relevant variables -----
 
-# Model 1: Log GDP Per Capita (2023) regressed on Eras Tour Host only
+regression_data_54 <- regression_data |>
+  filter(industry_classification == 54)|>
+  mutate(less_than_HS_share = (less_than_a_high_school_diploma_2018_22/pop_estimate_2023),
+         hs_only_share = (high_school_diploma_only_2018_22/pop_estimate_2023),
+         some_college_share = (some_college_or_associates_degree_2018_22/pop_estimate_2023),
+         bachelors_or_higher_share = (bachelors_degree_or_higher_2018_22/pop_estimate_2023),
+         net_mig_rate = (net_mig_2023/pop_estimate_2023),
+         log_gdp_pc = log(1+x2023))|>
+  select(1,49,29,37,43:48)
 
-# Model 2: Add educational attainment controls
-
-# Model 3: Add poverty control
-
-# Model 4: Add net migration control
-
-# Model 5: Add GDP in 2022 as an additional control
-
-# 4. Generate the regression table with stargazer
-
-
-# --------------------------------------------------------------------------------------
-# Section 3.7.4 - Regression Analysis: Industries Least Likely to Be Impacted (NAICS 11)
-# --------------------------------------------------------------------------------------
-
-# 1. Filter the dataset to only include NAICS 11
-
-# 2. Prepare population characteristics and relevant variables
-
-# 3. Define regression models with progressively added controls
+## 3. Define regression models with progressively added controls ---------
 
 # Model 1: Log GDP Per Capita (2023) regressed on Eras Tour Host only
 
+model_1 <- lm(log_gdp_pc ~ eras_tour_host, data = regression_data_54)
+
+print(summary(model_1))
+
 # Model 2: Add educational attainment controls
+
+model_2 <- lm(log_gdp_pc ~ eras_tour_host + less_than_HS_share + hs_only_share +
+                some_college_share + bachelors_or_higher_share, data = regression_data_54)
+
+print(summary(model_2))
 
 # Model 3: Add poverty control
 
+model_3 <- lm(log_gdp_pc ~ eras_tour_host + less_than_HS_share + hs_only_share +
+                some_college_share + bachelors_or_higher_share + pctpovall_2021, data = regression_data_54)
+
+print(summary(model_3))
+
 # Model 4: Add net migration control
+
+model_4 <- lm(log_gdp_pc ~ eras_tour_host + less_than_HS_share + hs_only_share +
+                some_college_share + bachelors_or_higher_share + pctpovall_2021 +
+                net_mig_rate, data = regression_data_54)
+
+print(summary(model_4))
 
 # Model 5: Add GDP in 2022 as an additional control
 
+model_5 <- lm(log_gdp_pc ~ eras_tour_host + less_than_HS_share + hs_only_share +
+                some_college_share + bachelors_or_higher_share + pctpovall_2021 +
+                net_mig_rate + x2022, data = regression_data_54)
+
+print(summary(model_5))
+
 # 4. Generate the regression table with stargazer
+
+all_models <- list(model_1,model_2,model_3,model_4,model_5)
+
+stargazer(
+  all_models,
+  type = "text",
+  #title = "Regression Results: Effects of the Eras Tour on GDP (2023)",
+  dep.var.labels = "Log GDP Per Capita (2023)",
+  covariate.labels = c(
+    "Eras Tour Host",
+    "Share with Less than High School",
+    "Share with High School Only",
+    "Share with Some College",
+    "Share with Bachelor's Degree or Higher",
+    "Poverty Rate (2021)",
+    "Net Migration Rat (2023)",
+    "GDP Per Capita (2022)"
+  ),
+  #column.labels = "Arts, Entertainment, and Recreation",
+  align = TRUE,
+  no.space = TRUE,
+  digits = 2,
+  out = "2. output/tables/regression_data_54.txt"
+)
+
+
+
+# ||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||
+# Section 3.7.4 - Regression Analysis: Industries Least Likely to Be Impacted (NAICS 11) -------
+# ||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||
+
+## 1. Filter the dataset to only include NAICS 11 -----
+
+# Done below.
+
+## 2. Prepare population characteristics and relevant variables -----
+
+regression_data_11 <- regression_data |>
+  filter(industry_classification == 11)|>
+  mutate(less_than_HS_share = (less_than_a_high_school_diploma_2018_22/pop_estimate_2023),
+         hs_only_share = (high_school_diploma_only_2018_22/pop_estimate_2023),
+         some_college_share = (some_college_or_associates_degree_2018_22/pop_estimate_2023),
+         bachelors_or_higher_share = (bachelors_degree_or_higher_2018_22/pop_estimate_2023),
+         net_mig_rate = (net_mig_2023/pop_estimate_2023),
+         log_gdp_pc = log(1+x2023))|>
+  select(1,49,29,37,43:48)
+
+## 3. Define regression models with progressively added controls ---------
+
+# Model 1: Log GDP Per Capita (2023) regressed on Eras Tour Host only
+
+model_1 <- lm(log_gdp_pc ~ eras_tour_host, data = regression_data_11)
+
+print(summary(model_1))
+
+# Model 2: Add educational attainment controls
+
+model_2 <- lm(log_gdp_pc ~ eras_tour_host + less_than_HS_share + hs_only_share +
+                some_college_share + bachelors_or_higher_share, data = regression_data_11)
+
+print(summary(model_2))
+
+# Model 3: Add poverty control
+
+model_3 <- lm(log_gdp_pc ~ eras_tour_host + less_than_HS_share + hs_only_share +
+                some_college_share + bachelors_or_higher_share + pctpovall_2021, data = regression_data_11)
+
+print(summary(model_3))
+
+# Model 4: Add net migration control
+
+model_4 <- lm(log_gdp_pc ~ eras_tour_host + less_than_HS_share + hs_only_share +
+                some_college_share + bachelors_or_higher_share + pctpovall_2021 +
+                net_mig_rate, data = regression_data_11)
+
+print(summary(model_4))
+
+# Model 5: Add GDP in 2022 as an additional control
+
+model_5 <- lm(log_gdp_pc ~ eras_tour_host + less_than_HS_share + hs_only_share +
+                some_college_share + bachelors_or_higher_share + pctpovall_2021 +
+                net_mig_rate + x2022, data = regression_data_11)
+
+print(summary(model_5))
+
+# 4. Generate the regression table with stargazer
+
+all_models <- list(model_1,model_2,model_3,model_4,model_5)
+
+stargazer(
+  all_models,
+  type = "text",
+  #title = "Regression Results: Effects of the Eras Tour on GDP (2023)",
+  dep.var.labels = "Log GDP Per Capita (2023)",
+  covariate.labels = c(
+    "Eras Tour Host",
+    "Share with Less than High School",
+    "Share with High School Only",
+    "Share with Some College",
+    "Share with Bachelor's Degree or Higher",
+    "Poverty Rate (2021)",
+    "Net Migration Rat (2023)",
+    "GDP Per Capita (2022)"
+  ),
+  #column.labels = "Arts, Entertainment, and Recreation",
+  align = TRUE,
+  no.space = TRUE,
+  digits = 2,
+  out = "2. output/tables/regression_data_11.txt"
+)
