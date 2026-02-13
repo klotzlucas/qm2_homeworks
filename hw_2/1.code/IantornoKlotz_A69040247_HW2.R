@@ -2,7 +2,7 @@
 #
 # QM II: Homework 2
 # Author: Lucas Iantorno Klotz
-# last modified: -
+# last modified: 02/12/2026
 # 
 ################################################################################
 
@@ -111,7 +111,7 @@ length(unique(working_data$geo_name))                                           
 year_columns <- c("x2001","x2002","x2003","x2004","x2005","x2006",              # Vector with all the year variables
                              "x2007","x2008","x2009","x2010","x2011","x2012",
                              "x2013","x2014","x2015","x2016","x2017","x2018",
-                             "x2019","x2020","x2021","x2022","x2023")           # I had to do this because clean_names() adds an x for all variables which name is a number
+                             "x2019","x2020","x2021","x2022","x2023")           # I had to do this because clean_names() adds an x for all variables whose name is a number
 
 ## 2. Replace "(D)" with NA and convert the columns to numeric -----
 
@@ -155,13 +155,18 @@ working_data_71 <- working_data|>
 
 plot_gdp_pc_23 <- ggplot(working_data_71, aes(x = x2023)) +
   geom_histogram(
-    aes(y = after_stat(count / sum(count)) * 100),                              # after_stat() replaces ..variable..
+    aes(y = after_stat(count/sum(count)) * 100),                              # after_stat() replaces ..variable..
     binwidth = .5,
     fill = "#2e67be", 
     alpha = 0.5, 
     color = "#2e67be"
   ) +
-  labs(x = "GDP per capita (2023)",
+  scale_x_continuous(
+    breaks = seq(0, 57, by = 7),  
+    limits = c(0, 57)
+  ) +
+  labs(# title = TITLE IS DISPLAYED ON THE WRITEUP ,
+       x = "GDP per capita (in thousands of USD)",
        y = "Frequency (%)") +
   th
 
@@ -183,7 +188,8 @@ plot_gdp_pc_23_log <- ggplot(working_data_71, aes(x = log(1+x2023))) +
     alpha = 0.5, 
     color = "#2e67be"
   ) +
-  labs(x = "GDP per capita (2023)",
+  labs(# title = TITLE IS DISPLAYED ON THE WRITEUP ,
+       x = "Log GDP per capita",
        y = "Frequency (%)") +
   th
 
@@ -295,17 +301,18 @@ plot_bar_with_ci <- function(variable, ci_variable, title, y_label) {
       width = 0.2,
       data = filter(plot_data, eras_tour_host == 1)
     ) +
+    scale_fill_manual(values = colors,
+                       labels = c("0" = "No",
+                                  "1" = "Yes"))+   
     labs(title = title, x = "Eras Tour Host", y = y_label,
          fill = "Eras Tour Host") +
-    theme_minimal() +
-    theme(plot.title = element_text(size = 10), axis.text.x = element_text(angle = 45, hjust = 1))
+    th
 }
 
 # Generate plots for each characteristic
 plot1 <- plot_bar_with_ci("less_than_hs", "less_than_hs_ci",
                           "Less than High School Diploma", "Percentage (%)")
-plot2 <- plot_bar_with_ci("hs_only", "less_than_hs", "High
-                          School Diploma Only", "Percentage (%)")
+plot2 <- plot_bar_with_ci("hs_only", "hs_only_ci", "High School Diploma Only", "Percentage (%)")
 plot3 <- plot_bar_with_ci("some_college", "some_college_ci",
                           "Some College or Associate Degree", "Percentage (%)")
 plot4 <- plot_bar_with_ci("bachelors_higher", "bachelors_higher_ci",
@@ -322,7 +329,7 @@ final_panel <- (plot1 | plot2) / (plot3 | plot4) / (plot5 | plot6)
 print(final_panel)
 
 # Save the final plot as an image file
-ggsave("demographics_comparison_panel.png", plot = final_panel, width = 12, height = 10, dpi = 300)
+ggsave("2. output/figures/demographics_comparison_panel.png", plot = final_panel, width = 12, height = 10, dpi = 300)
 
 
 # |||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||
@@ -341,9 +348,9 @@ regression_data_71 <- regression_data |>
          hs_only_share = (high_school_diploma_only_2018_22/pop_estimate_2023),
          some_college_share = (some_college_or_associates_degree_2018_22/pop_estimate_2023),
          bachelors_or_higher_share = (bachelors_degree_or_higher_2018_22/pop_estimate_2023),
-         net_mig_rate = (net_mig_2023/pop_estimate_2023),
+         #net_mig_rate = (net_mig_2023/pop_estimate_2023),
          log_gdp_pc = log(1+x2023))|>
-  select(1,49,29,37,43:48)
+  select(1,48,29,32,37,43:47)
 
 ## 3. Define regression models with progressively added controls ---------
 
@@ -371,7 +378,7 @@ print(summary(model_3))
 
 model_4 <- lm(log_gdp_pc ~ eras_tour_host + less_than_HS_share + hs_only_share +
                 some_college_share + bachelors_or_higher_share + pctpovall_2021 +
-                net_mig_rate, data = regression_data_71)
+                net_mig_2023, data = regression_data_71)
 
 print(summary(model_4))
 
@@ -379,7 +386,7 @@ print(summary(model_4))
 
 model_5 <- lm(log_gdp_pc ~ eras_tour_host + less_than_HS_share + hs_only_share +
                 some_college_share + bachelors_or_higher_share + pctpovall_2021 +
-                net_mig_rate + x2022, data = regression_data_71)
+                net_mig_2023 + log(1+x2022), data = regression_data_71)
 
 print(summary(model_5))
 
@@ -389,7 +396,7 @@ all_models <- list(model_1,model_2,model_3,model_4,model_5)
 
 stargazer(
   all_models,
-  type = "text",
+  type = "latex",
   #title = "Regression Results: Effects of the Eras Tour on Arts, Entertainment, and Recreation (2023)",
   dep.var.labels = "Log GDP Per Capita (2023)",
   covariate.labels = c(
@@ -399,14 +406,14 @@ stargazer(
     "Share with Some College",
     "Share with Bachelor's Degree or Higher",
     "Poverty Rate (2021)",
-    "Net Migration Rat (2023)",
-    "GDP Per Capita (2022)"
+    "Net Migration (2023)",
+    "Log GDP Per Capita (2022)"
   ),
   #column.labels = "Arts, Entertainment, and Recreation",
   align = TRUE,
   no.space = TRUE,
   digits = 2,
-  out = "2. output/tables/regression_results_71.txt"
+  out = "2. output/tables/regression_results_71.tex"
 )
 
 # -------------------------------------------------------------------------------------
@@ -425,9 +432,9 @@ regression_data_72 <- regression_data |>
          hs_only_share = (high_school_diploma_only_2018_22/pop_estimate_2023),
          some_college_share = (some_college_or_associates_degree_2018_22/pop_estimate_2023),
          bachelors_or_higher_share = (bachelors_degree_or_higher_2018_22/pop_estimate_2023),
-         net_mig_rate = (net_mig_2023/pop_estimate_2023),
+         #net_mig_rate = (net_mig_2023/pop_estimate_2023),
          log_gdp_pc = log(1+x2023))|>
-  select(1,49,29,37,43:48)
+  select(1,48,29,32,37,43:47)
 
 ## 3. Define regression models with progressively added controls ---------
 
@@ -455,7 +462,7 @@ print(summary(model_3))
 
 model_4 <- lm(log_gdp_pc ~ eras_tour_host + less_than_HS_share + hs_only_share +
                 some_college_share + bachelors_or_higher_share + pctpovall_2021 +
-                net_mig_rate, data = regression_data_72)
+                net_mig_2023, data = regression_data_72)
 
 print(summary(model_4))
 
@@ -463,7 +470,7 @@ print(summary(model_4))
 
 model_5 <- lm(log_gdp_pc ~ eras_tour_host + less_than_HS_share + hs_only_share +
                 some_college_share + bachelors_or_higher_share + pctpovall_2021 +
-                net_mig_rate + x2022, data = regression_data_72)
+                net_mig_2023 + log(1+x2022), data = regression_data_72)
 
 print(summary(model_5))
 
@@ -473,7 +480,7 @@ all_models <- list(model_1,model_2,model_3,model_4,model_5)
 
 stargazer(
   all_models,
-  type = "text",
+  type = "latex",
   #title = "Regression Results: Effects of the Eras Tour on GDP (2023)",
   dep.var.labels = "Log GDP Per Capita (2023)",
   covariate.labels = c(
@@ -483,14 +490,14 @@ stargazer(
     "Share with Some College",
     "Share with Bachelor's Degree or Higher",
     "Poverty Rate (2021)",
-    "Net Migration Rat (2023)",
-    "GDP Per Capita (2022)"
+    "Net Migration (2023)",
+    "Log GDP Per Capita (2022)"
   ),
   #column.labels = "Arts, Entertainment, and Recreation",
   align = TRUE,
   no.space = TRUE,
   digits = 2,
-  out = "2. output/tables/regression_data_72.txt"
+  out = "2. output/tables/regression_data_72.tex"
 )
 
 # -------------------------------------------------------------------------------------------
@@ -509,9 +516,9 @@ regression_data_54 <- regression_data |>
          hs_only_share = (high_school_diploma_only_2018_22/pop_estimate_2023),
          some_college_share = (some_college_or_associates_degree_2018_22/pop_estimate_2023),
          bachelors_or_higher_share = (bachelors_degree_or_higher_2018_22/pop_estimate_2023),
-         net_mig_rate = (net_mig_2023/pop_estimate_2023),
+         #net_mig_rate = (net_mig_2023/pop_estimate_2023),
          log_gdp_pc = log(1+x2023))|>
-  select(1,49,29,37,43:48)
+  select(1,48,29,32,37,43:47)
 
 ## 3. Define regression models with progressively added controls ---------
 
@@ -539,7 +546,7 @@ print(summary(model_3))
 
 model_4 <- lm(log_gdp_pc ~ eras_tour_host + less_than_HS_share + hs_only_share +
                 some_college_share + bachelors_or_higher_share + pctpovall_2021 +
-                net_mig_rate, data = regression_data_54)
+                net_mig_2023, data = regression_data_54)
 
 print(summary(model_4))
 
@@ -547,7 +554,7 @@ print(summary(model_4))
 
 model_5 <- lm(log_gdp_pc ~ eras_tour_host + less_than_HS_share + hs_only_share +
                 some_college_share + bachelors_or_higher_share + pctpovall_2021 +
-                net_mig_rate + x2022, data = regression_data_54)
+                net_mig_2023 + log(1+x2022), data = regression_data_54)
 
 print(summary(model_5))
 
@@ -557,7 +564,7 @@ all_models <- list(model_1,model_2,model_3,model_4,model_5)
 
 stargazer(
   all_models,
-  type = "text",
+  type = "latex",
   #title = "Regression Results: Effects of the Eras Tour on GDP (2023)",
   dep.var.labels = "Log GDP Per Capita (2023)",
   covariate.labels = c(
@@ -567,14 +574,14 @@ stargazer(
     "Share with Some College",
     "Share with Bachelor's Degree or Higher",
     "Poverty Rate (2021)",
-    "Net Migration Rat (2023)",
-    "GDP Per Capita (2022)"
+    "Net Migration (2023)",
+    "Log GDP Per Capita (2022)"
   ),
   #column.labels = "Arts, Entertainment, and Recreation",
   align = TRUE,
   no.space = TRUE,
   digits = 2,
-  out = "2. output/tables/regression_data_54.txt"
+  out = "2. output/tables/regression_data_54.tex"
 )
 
 
@@ -595,9 +602,9 @@ regression_data_11 <- regression_data |>
          hs_only_share = (high_school_diploma_only_2018_22/pop_estimate_2023),
          some_college_share = (some_college_or_associates_degree_2018_22/pop_estimate_2023),
          bachelors_or_higher_share = (bachelors_degree_or_higher_2018_22/pop_estimate_2023),
-         net_mig_rate = (net_mig_2023/pop_estimate_2023),
+         #net_mig_rate = (net_mig_2023/pop_estimate_2023),
          log_gdp_pc = log(1+x2023))|>
-  select(1,49,29,37,43:48)
+  select(1,48,29,32,37,43:47)
 
 ## 3. Define regression models with progressively added controls ---------
 
@@ -625,7 +632,7 @@ print(summary(model_3))
 
 model_4 <- lm(log_gdp_pc ~ eras_tour_host + less_than_HS_share + hs_only_share +
                 some_college_share + bachelors_or_higher_share + pctpovall_2021 +
-                net_mig_rate, data = regression_data_11)
+                net_mig_2023, data = regression_data_11)
 
 print(summary(model_4))
 
@@ -633,7 +640,7 @@ print(summary(model_4))
 
 model_5 <- lm(log_gdp_pc ~ eras_tour_host + less_than_HS_share + hs_only_share +
                 some_college_share + bachelors_or_higher_share + pctpovall_2021 +
-                net_mig_rate + x2022, data = regression_data_11)
+                net_mig_2023 + log(1+x2022), data = regression_data_11)
 
 print(summary(model_5))
 
@@ -643,7 +650,7 @@ all_models <- list(model_1,model_2,model_3,model_4,model_5)
 
 stargazer(
   all_models,
-  type = "text",
+  type = "latex",
   #title = "Regression Results: Effects of the Eras Tour on GDP (2023)",
   dep.var.labels = "Log GDP Per Capita (2023)",
   covariate.labels = c(
@@ -653,12 +660,12 @@ stargazer(
     "Share with Some College",
     "Share with Bachelor's Degree or Higher",
     "Poverty Rate (2021)",
-    "Net Migration Rat (2023)",
-    "GDP Per Capita (2022)"
+    "Net Migration (2023)",
+    "Log GDP Per Capita (2022)"
   ),
   #column.labels = "Arts, Entertainment, and Recreation",
   align = TRUE,
   no.space = TRUE,
   digits = 2,
-  out = "2. output/tables/regression_data_11.txt"
+  out = "2. output/tables/regression_data_11.tex"
 )
