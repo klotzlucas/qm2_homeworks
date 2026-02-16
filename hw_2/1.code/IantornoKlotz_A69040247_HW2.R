@@ -2,7 +2,7 @@
 #
 # QM II: Homework 2
 # Author: Lucas Iantorno Klotz
-# last modified: 02/12/2026
+# last modified: 02/15/2026
 # 
 ################################################################################
 
@@ -11,6 +11,12 @@
 
 # I usually have a master file where I load the packages and define a few functions.
 # I'm going to add them here.
+
+# Dear TA, the plots' titles are displayed on the writeup. I commented the lines
+# that set the title to the plot.
+
+# You will also note that the variables' names are a bit distinct from the original
+# raw data. That's because I use janitor::clean_name() which standardize the names.
 
 # 0. Preamble --------
 
@@ -170,7 +176,7 @@ plot_gdp_pc_23 <- ggplot(working_data_71, aes(x = x2023)) +
        y = "Frequency (%)") +
   th
 
-# Very skewed to left, which is normal for gdp.
+# Very skewed to the right, which is normal for gdp.
 
 # Display the plot
 print(plot_gdp_pc_23)
@@ -237,8 +243,9 @@ naics_71_log_gdp_plot <- ggplot(industry_summary, aes(x = year, y = avg_log_gdp_
   scale_color_manual(values = colors,
                      labels = c("0" = "Did not host the Eras Tour",
                                 "1" = "Hosted the Eras Tour"))+                   # label each group legend
-  labs(x = "Year",
-       y = "Avg. Log GDP per capita") +
+  labs(# title = TITLE IS DISPLAYED ON THE WRITEUP,
+    x = "Year",
+    y = "Avg. Log GDP per capita") +
   th
 
 # Display the plot
@@ -397,7 +404,7 @@ all_models <- list(model_1,model_2,model_3,model_4,model_5)
 stargazer(
   all_models,
   type = "latex",
-  #title = "Regression Results: Effects of the Eras Tour on Arts, Entertainment, and Recreation (2023)",
+  #title = TITLE DISPLAYED ON THE WRITEUP,
   dep.var.labels = "Log GDP Per Capita (2023)",
   covariate.labels = c(
     "Eras Tour Host",
@@ -412,7 +419,7 @@ stargazer(
   #column.labels = "Arts, Entertainment, and Recreation",
   align = TRUE,
   no.space = TRUE,
-  digits = 2,
+  digits = 3,
   out = "2. output/tables/regression_results_71.tex"
 )
 
@@ -496,7 +503,7 @@ stargazer(
   #column.labels = "Arts, Entertainment, and Recreation",
   align = TRUE,
   no.space = TRUE,
-  digits = 2,
+  digits = 3,
   out = "2. output/tables/regression_data_72.tex"
 )
 
@@ -580,7 +587,7 @@ stargazer(
   #column.labels = "Arts, Entertainment, and Recreation",
   align = TRUE,
   no.space = TRUE,
-  digits = 2,
+  digits = 3,
   out = "2. output/tables/regression_data_54.tex"
 )
 
@@ -666,6 +673,6 @@ stargazer(
   #column.labels = "Arts, Entertainment, and Recreation",
   align = TRUE,
   no.space = TRUE,
-  digits = 2,
+  digits = 3,
   out = "2. output/tables/regression_data_11.tex"
 )
