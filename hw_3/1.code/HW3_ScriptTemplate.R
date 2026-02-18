@@ -54,7 +54,11 @@ getwd()
 justice_data<-read.table("raw_data/justice_results.tab",
                          header = T,
                          sep = "\t",
-                         enconding = "ISO-8859-1")
+                         encoding = "ISO-8859-1")
+
+# Pitch difference = vocal pitch in questions directed toward petitioner minus
+# vocal pitc in questions directed toward respondents.
+
 
 ## 2. Explore the dataset -------
 # Display the structure of the dataset
@@ -63,14 +67,71 @@ justice_data<-read.table("raw_data/justice_results.tab",
 
 # 4. Count unique observations in the 'docket' variable -------
 
+length(unique(justice_data$docket))
+
+# 1002 Supreme Court cases
+
 # 5. Check for missing values ------
 
+na_data<-justice_data |>
+  summarise(across(everything(), ~sum(is.na(.)))) |>
+  pivot_longer(everything(), names_to = "var", values_to = "n_NA") |>
+  filter(n_NA > 0) %>%
+  arrange(desc(n_NA))
 
 # ---------------------------
 # Section 3.2 - Getting to Know the Data and Descriptive Statistics
 # ---------------------------
 
 # 1. Examine Key Variables: Generate summary statistics
+
+summary_stats <- justice_data |>
+  summarise(across(c(petitioner_vote, pitch_diff, petitioner_harvard_pos), list(
+    N    = ~sum(!is.na(.)),
+    mean = ~mean(., na.rm=TRUE),
+    sd   = ~sd(., na.rm=TRUE),
+    min  = ~min(., na.rm=TRUE),
+    p25  = ~quantile(., .25, na.rm=TRUE),
+    med  = ~median(., na.rm=TRUE),
+    p75  = ~quantile(., .75, na.rm=TRUE),
+    max  = ~max(., na.rm=TRUE),
+    n_NA = ~sum(is.na(.))
+  ), .names = "{.col}__{.fn}")) |>
+  pivot_longer(everything(), names_to = "name", values_to = "value") %>%
+  separate(name, into = c("var", "stat"), sep = "__") %>%
+  pivot_wider(names_from = stat, values_from = value) %>%
+  select(var, N, mean, sd, min, p25, med, p75, max, n_NA)
+
+kable(summary_stats)
+
+
+
+histogram <- function(variable, x_label) {
+  
+  plot_data <- justice_data %>%
+    filter(!is.na(.data[[variable]]))
+  
+  ggplot(plot_data, aes(x = .data[[variable]])) +
+    geom_histogram(
+      aes(y = after_stat(count / sum(count)) * 100),                              # after_stat() replaces ..variable..
+      #binwidth = .5,
+      fill = "#2e67be", 
+      alpha = 0.5, 
+      color = "#2e67be"
+    ) +
+    labs(#title = title,
+         x = x_label,
+         y = "Frequency (%)") +
+    th
+}
+
+# Generate plots for each variable
+plot1 <- histogram("pitch_diff", "Pitch difference")
+plot2 <- histogram("petitioner_harvard_pos", "Positive words addressed to petitioner")
+
+# Display plots
+final_panel <- (plot1 | plot2) 
+print(final_panel)
 
 # 2. Create New Variables
 
