@@ -25,7 +25,7 @@ gc()
 
 options(scipen = 20)                                                            # Avoid scientific notation when looking at data.frames
 
-pack <- c('tidyverse', 'stargazer', 'readxl', 'patchwork')
+pack <- c('tidyverse', 'stargazer', 'readxl', 'patchwork', 'knitr')
 
 pacman::p_load(pack, install = F, character.only = T)                           # loading packages
 
@@ -36,8 +36,8 @@ th <- theme(panel.grid.major = element_blank(), panel.grid.minor = element_blank
             plot.subtitle = element_text(size = 12, hjust = 0.5),
             panel.background = element_blank(), axis.line = element_line(colour = "black"),
             axis.title =  element_text(size=16), legend.position="bottom", legend.title = element_blank(),
-            legend.text = element_text(size=16),
-            axis.text =   element_text(size=10),
+            legend.text = element_text(size=14),
+            axis.text =   element_text(size=12),
             #axis.text.x = element_text(angle = 45, hjust = 1),
             plot.caption = element_text(hjust = 0, size=11),
             strip.text = element_text(size = 15),
@@ -105,6 +105,7 @@ summary_stats <- justice_data |>
 kable(summary_stats)
 
 
+# Pitch difference and number of positive words with some outliers.
 
 histogram <- function(variable, x_label) {
   
@@ -133,25 +134,76 @@ plot2 <- histogram("petitioner_harvard_pos", "Positive words addressed to petiti
 final_panel <- (plot1 | plot2) 
 print(final_panel)
 
-# 2. Create New Variables
+## 2. Create New Variables----
 
 # Create the binary variable high_pitch_diff
 
 # Create the categorical variable court_period based on chief justice tenure
 
 # Convert court_period to a factor for categorical analysis
+justice_data<-justice_data|>
+  mutate(high_pitch_diff = ifelse(pitch_diff > mean(pitch_diff),1,0),           # No NAs no need for na.rm = T
+         court_period = case_when(
+           term >= 1969 & term <= 1985 ~ "Burger Court",
+           term >= 1986 & term <= 2004 ~ "Rehnquist Court",
+           term >= 2005 ~ "Roberts Court",
+         ))           
 
 # Verify the new variables
+table(justice_data$high_pitch_diff)
+table(justice_data$court_period)
 
-# 3. Visualize Amicus Support and Voting Patterns
+
+# 3. Visualize Amicus Support and Voting Patterns ------
 
 # Filter for the three Chief Justices
 
+chief_data<-justice_data|>
+  filter(justiceName %in% c("WEBurger","WHRehnquist","JGRoberts"))|>
+  select(justiceName,petitioner_vote,sgpetac)|>
+  #filter(across(everything(), ~ !is.na(.)))
+  filter(if_all(everything(),~!is.na(.)))                                       # It looks like it does the same as line 164
+
 # Calculate proportion of votes in favor of petitioner
 
+summary_proportions<-chief_data|>
+  group_by(justiceName, sgpetac)|> # we want the proportion by chief justice and amicus brief
+  summarise(share_votes = mean(petitioner_vote),
+            sgpetac = as.factor(sgpetac))
+  
 # Create bar plot
 
-# Save the plot
+colors <- c("1" = "#2e67be", "0" = "#E58724")                                   # I like these colors, if that's okay
+
+plot_bar<- function(justice, title) {
+  
+  plot_data <- summary_proportions %>%
+    filter(justiceName == justice)
+  
+  ggplot(plot_data, aes(x = as.factor(sgpetac), y = round(share_votes,2), fill =  as.factor(sgpetac))) +
+    geom_bar(stat = "identity", position = "dodge", width = 0.7) +
+    scale_fill_manual(values = colors,
+                      guide = "none") + # removes the legend
+    scale_x_discrete(labels = c(`0` = "No Amicus", `1` = "Amicus")) +
+    scale_y_continuous(breaks = seq(0, 1, by = .2),  
+                       limits = c(0, 1))+
+    labs(title = title, x = "Amicus Brief Submission", y = "Share of Votes",
+         fill = "Amicus Brief Submission") +
+    th
+}
+
+plot1 <- plot_bar("WEBurger", "Warren E. Burguer")
+plot2 <- plot_bar("WHRehnquist", "William Rehnquist")
+plot3 <- plot_bar("JGRoberts", "John Roberts")
+
+
+final_panel <- (plot1 | plot2) / (plot3)
+
+print(final_panel)
+
+# save plot
+ggsave("2. output/figures/HW3_Fig1.png", plot = final_panel, width = 12, height = 10, dpi = 300)
+
 
 
 # 4. Visualize Pitch Differential by Court Period
