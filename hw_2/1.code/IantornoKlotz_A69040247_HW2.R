@@ -44,7 +44,7 @@ th <- theme(panel.grid.major = element_blank(), panel.grid.minor = element_blank
             plot.caption.position =  "plot")
 
 # Set working directory
-setwd("/Users/liklotz/Library/CloudStorage/OneDrive-Pessoal/UCSD/winter_quarter_2026/QM_II/homeworks/hw_2") # the TA should change the working directory
+#setwd("/Users/liklotz/Library/CloudStorage/OneDrive-Pessoal/UCSD/winter_quarter_2026/QM_II/homeworks/hw_2") # the TA should change the working directory
 getwd()
 
 # |||||||||||||||||||||||||||||||||||||||||||||||||||||||

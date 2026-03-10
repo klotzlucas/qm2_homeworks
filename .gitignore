@@ -3,3 +3,4 @@
 !.gitignore
 !README.md
 !hw*/**/*.R
+.Rproj.user
