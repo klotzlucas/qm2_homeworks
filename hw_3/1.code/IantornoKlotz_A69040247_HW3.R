@@ -358,6 +358,7 @@ fig_3<-ggplot(fig_3_3_5, aes(x = x, y = predicted, color = group)) +
        y = "Predicted Probability of Voting for Petitioner") +
   th
 
+print(fig_3)
 
 # Save the plot
 
@@ -423,6 +424,8 @@ fig_4<-ggplot(fig_3_3_7, aes(x = x, y = predicted, color = group)) +
     y = "Predicted Probability of Voting for Petitioner") +
   th
 
+print(fig_4)
+
 
 # Save the plot
 
@@ -440,6 +443,9 @@ fig_5<-interact_plot(model_6, pred = pitch_diff, modx = pr_petitioner_pos,
     x = "Pitch Difference",
     y = "Predicted Probability of Voting for Petitioner") +
   th
+
+
+print(fig_5)
 
 
 # Save the plot
@@ -574,6 +580,9 @@ fig_6<-ggplot(justice_data_nna, aes(x = abs(dffits), y = leverage)) +
     x = "DFFITS",
     y = "Leverage") +
   th
+
+print(fig_6)
+
 
 # Save the plot
 
